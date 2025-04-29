@@ -1,75 +1,115 @@
-'use client';
-import { useState } from 'react';
+'use client'
+
+import { useState } from 'react'
 
 export default function Home() {
-  // 定义组件状态
-  const [numA, setNumA] = useState('');
-  const [numB, setNumB] = useState('');
-  const [op, setOp] = useState('Add');    // 运算符，默认加法
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
+  const [a, setA] = useState<number | ''>('')
+  const [b, setB] = useState<number | ''>('')
+  const [op, setOp] = useState<string>('add')
+  const [result, setResult] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
-  // 处理表单提交
-  const handleCalculate = async () => {
-    setError(''); // 重置错误
-    setResult(null);
-    if (numA === '' || numB === '') {
-      setError('请输入两个数字');
-      return;
+  const handleCalc = async () => {
+    setError(null)
+    setResult(null)
+
+    if (a === '' || b === '') {
+      setError("请输入完整数字")
+      return
     }
-    // 准备请求数据
-    const a = parseFloat(numA);
-    const b = parseFloat(numB);
-    const url = `http://localhost:8080/calculator.CalculatorService/${op}`;
+
     try {
-      const res = await fetch(url, {
+      const res = await fetch(`http://localhost:8080/calculator.CalculatorService/${op}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ a, b })
-      });
-      if (!res.ok) {
-        // HTTP 错误，从响应中提取错误信息
-        const errData = await res.json();
-        const errMsg = errData.error?.message || '请求失败';
-        throw new Error(errMsg);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ a, b }),
+      })
+      const json = await res.json()
+      if (json && typeof json.result === 'number') {
+        setResult(json.result.toString())
+      } else {
+        setError("后端响应异常")
       }
-      const data = await res.json();
-      setResult(data.result);
-    } catch (err) {
-      setError(`计算出错：${err.message}`);
+    } catch {
+      setError("NetworkError：无法连接服务")
     }
-  };
+  }
+
+  const handleClear = () => {
+    setA('')
+    setB('')
+    setResult(null)
+    setError(null)
+  }
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', fontFamily: 'sans-serif' }}>
-      <h1>在线计算器</h1>
-      <div style={{ marginBottom: '8px' }}>
+    <div className="min-h-screen bg-neutral-900 text-white flex flex-col justify-center items-center px-4">
+      <h1 className="text-6xl font-bold mb-10 font-sans">Calculator</h1>
+
+      <div className="w-full max-w-xl flex items-center justify-between bg-neutral-800 border border-gray-700 rounded-full px-4 py-3 shadow-lg">
         <input
           type="number"
+          value={a}
+          onChange={(e) => setA(Number(e.target.value))}
           placeholder="数字 A"
-          value={numA}
-          onChange={(e) => setNumA(e.target.value)}
-          style={{ width: '100px' }}
+          className="w-1/4 bg-transparent outline-none text-lg text-white placeholder-gray-400"
         />
-        <select value={op} onChange={(e) => setOp(e.target.value)} style={{ margin: '0 8px' }}>
-          <option value="Add">＋ 加法</option>
-          <option value="Subtract">− 减法</option>
-          <option value="Multiply">× 乘法</option>
-          <option value="Divide">÷ 除法</option>
+
+        <select
+          value={op}
+          onChange={(e) => setOp(e.target.value)}
+          className="w-1/4 bg-transparent outline-none text-lg text-white text-center"
+        >
+          <option value="add">+</option>
+          <option value="subtract">−</option>
+          <option value="multiply">×</option>
+          <option value="divide">÷</option>
         </select>
+
         <input
           type="number"
+          value={b}
+          onChange={(e) => setB(Number(e.target.value))}
           placeholder="数字 B"
-          value={numB}
-          onChange={(e) => setNumB(e.target.value)}
-          style={{ width: '100px' }}
+          className="w-1/4 bg-transparent outline-none text-lg text-white placeholder-gray-400"
         />
       </div>
-      <button onClick={handleCalculate}>计算</button>
-      <div style={{ marginTop: '16px', minHeight: '1.5em' }}>
-        {error ? <span style={{ color: 'red' }}>{error}</span> : null}
-        {result !== null ? <span>结果：<b>{result}</b></span> : null}
+
+      <div className="mt-6 flex gap-4">
+        <button
+          onClick={handleCalc}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-full transition"
+        >
+          计算
+        </button>
+        <button
+          onClick={handleClear}
+          className="bg-gray-700 hover:bg-gray-600 text-white font-medium px-6 py-2 rounded-full transition"
+        >
+          清空
+        </button>
       </div>
+
+      {result && (
+        <div className="mt-8 text-green-400 text-xl font-semibold">
+          ✅ 结果：{result}
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-8 text-red-400 text-xl font-semibold">
+          ❌ {error}
+        </div>
+      )}
+
+      {/* 页脚 */}
+      <footer className="absolute bottom-0 w-full text-sm text-gray-500 text-center py-4 border-t border-neutral-800">
+        <div className="flex justify-center gap-4">
+          <a href="#" className="hover:underline">关于</a>
+          <a href="#" className="hover:underline">隐私</a>
+          <a href="#" className="hover:underline">设置</a>
+        </div>
+      </footer>
     </div>
-  );
+  )
 }
